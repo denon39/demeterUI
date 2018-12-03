@@ -55,6 +55,7 @@
 
 <script>
 import Datepicker from 'vuejs-datepicker';
+
 import * as d3 from "d3v4";
 export default {
   name: 'Home',
@@ -75,8 +76,15 @@ export default {
     }
   },
   mounted() {
+    var mqtt = require('mqtt')
+    console.log(mqtt);
+    this.client = mqtt.connect({port: 1883, host: '192.168.1.100', username: 'zombo', password:'pi', keepalive:10000});
     this.currentNav = "home";
     this.isActive = true;
+    this.client.subscribe('temp');
+    this.client.on('message', function (topic, message) {
+      console.log(message);
+    });
   },
   props: {
     msg: String

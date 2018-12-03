@@ -202,7 +202,8 @@ export default {
   background-color: white;
   margin: 20px;
   width: 50%;
-  height: 450px;
+  min-height: 450px;
+  height: 100%;
   box-shadow:.5em .3em 1em;
 }
 .center-text{
@@ -238,7 +239,7 @@ export default {
 	font-family:Arial;
 	font-size:22px;
 	font-weight:bold;
-	padding:13px 32px;
+	padding:8px 16px;
 	text-decoration:none;
 	text-shadow:0px 1px 0px #0C3C60;
 }

@@ -79,10 +79,23 @@ export default {
     var mqtt = require('mqtt')
     console.log(mqtt);
     this.client = mqtt.connect({port: 1883, host: '192.168.1.100', username: 'zombo', password:'pi', keepalive:10000});
+    console.log(this.client);
+
     this.currentNav = "home";
     this.isActive = true;
     this.client.subscribe('temp');
+    console.log(this.client);
+    console.log("HIT")
+    this.client.on('connect', function () {
+      console.log("CONNECTED");
+      this.client.subscribe('temp', function (err) {
+        if (!err) {
+          client.publish('presence', 'Hello mqtt')
+        }
+      })
+    })
     this.client.on('message', function (topic, message) {
+      console.log("HIT")
       console.log(message);
     });
   },

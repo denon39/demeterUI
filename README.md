@@ -1,4 +1,4 @@
-# sprinkler
+# Demeter
 
 ## Project setup
 ```

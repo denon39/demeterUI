@@ -55,7 +55,7 @@
 
 <script>
 import Datepicker from 'vuejs-datepicker';
-
+import tdata from '../../public/log000.txt';
 import * as d3 from "d3v4";
 export default {
   name: 'Home',
@@ -64,6 +64,7 @@ export default {
   },
   data: function(){
     return {
+      tdata,
       isActive: true,
       currentNav: "home",
       sprinklers: {
@@ -78,26 +79,27 @@ export default {
   mounted() {
     var mqtt = require('mqtt')
     console.log(mqtt);
-    this.client = mqtt.connect({port: 1883, host: '192.168.1.100', username: 'zombo', password:'pi', keepalive:10000});
-    console.log(this.client);
+    //this.client = mqtt.connect({port: 1883, host: '192.168.0.100', username: 'zombo', password:'pi', keepalive:10000});
+    //this.client = mqtt.connect('mqtt://test.mosquito.org');    
+//console.log(this.client);
 
     this.currentNav = "home";
     this.isActive = true;
-    this.client.subscribe('temp');
+    //this.client.subscribe('temp');
     console.log(this.client);
     console.log("HIT")
-    this.client.on('connect', function () {
-      console.log("CONNECTED");
-      this.client.subscribe('temp', function (err) {
-        if (!err) {
-          client.publish('presence', 'Hello mqtt')
-        }
-      })
-    })
-    this.client.on('message', function (topic, message) {
-      console.log("HIT")
-      console.log(message);
-    });
+    //this.client.on('connect', function () {
+    //  console.log("CONNECTED");
+    //  this.client.subscribe('temp', function (err) {
+     //   if (!err) {
+     //     client.publish('temp', 'Hello mqtt')
+     //   }
+    //  })
+    //})
+    //this.client.on('message', function (topic, message) {
+    //  console.log("HIT")
+    //  console.log(message);
+    //});
   },
   props: {
     msg: String
@@ -136,7 +138,7 @@ export default {
           height = 450 - margin.top - margin.bottom;
 
       // parse the date / time
-      var parseTime = d3.timeParse("%d-%b-%y");
+      var parseTime = d3.timeParse("%d-%b-%y %H:%M:%S");
 
       // set the ranges
       var x = d3.scaleTime().range([0, width]);
@@ -156,42 +158,53 @@ export default {
         .append("g")
           .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
-
+	console.log("req");
+	var d3data;
+	d3.text("/log001.txt", function(error, d3data){
+	d3data = '[' + d3data;
+	d3data = d3data.substring(0, d3data.length-1);
+	d3data = d3data + "]";
+	console.log(d3data);
       // Get the data
-      d3.csv("/" + arg + ".csv", function(error, data) {
-        console.log("DATA")
-        console.log(data)
-        if (error) throw error;
-
-        // format the data
-        data.forEach(function(d) {
-            d.date = parseTime(d.date);
-            d.close = +d.close;
-        });
-
-        // Scale the range of the data
-        x.domain(d3.extent(data, function(d) { return d.date; }));
-        y.domain([0, d3.max(data, function(d) { return d.close; })]);
-
-        // Add the valueline path.
-        svg.append("path")
-            .data([data])
-            .attr("class", "line")
-            .style("fill", "none")
-            .style("stroke", "steelblue")
-            .style("stoke-width", "2px")
-            .attr("d", valueline);
-
-        // Add the X Axis
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x));
-
-        // Add the Y Axis
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
+	      d3.json(d3data, function(error, data) {
+	        console.log("DATA")
+	        console.log(data)
+	        if (error) throw error;
+	
+	        // format the data
+	        data.forEach(function(d) {
+	            d.date = parseTime(d.date);
+	            d.close = +d.close;
+	        });
+	        // Scale the range of the data
+	        x.domain(d3.extent(data, function(d) { return d.date; }));
+	        y.domain([0, d3.max(data, function(d) { return d.close; })]);
+	
+	        // Add the valueline path.
+	        svg.append("path")
+	            .data([data])
+	            .attr("class", "line")
+	            .style("fill", "none")
+	            .style("stroke", "steelblue")
+	            .style("stoke-width", "2px")
+	            .attr("d", valueline);
+	
+	        // Add the X Axis
+	        svg.append("g")
+	            .attr("transform", "translate(0," + height + ")")
+	            .call(d3.axisBottom(x));
+	
+	        // Add the Y Axis
+	        svg.append("g")
+	            .call(d3.axisLeft(y));
+	
       });
+
+
+
+	})
+	
+
     }
   }
 }

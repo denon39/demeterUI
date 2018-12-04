@@ -28,15 +28,18 @@
       </div>
     </div>
     <div name="graphs" class="graphs" v-show="currentNav == 'graphs'">
-      <span class="center-text" style="margin-top: 15px;">Daily Averages</span>
+      <span class="center-text" style="margin-top: 15px;">Data From PI (Refresh for latest)</span><br/><br/><button class="LargeButton" @click="reRender">REFRESH DATA</button><br/><br/>
       <span class="center-text" style="color: #1e90ff;margin-top: 15px;">Temperature</span>
-      <div id="temperature" class="box" style="width: 90%">
+      <div id="temp" class="box" style="width: 90%">
       </div>
       <span class="center-text" style="color: #1e90ff;margin-top: 15px;">Moisture</span>
-      <div id="moisture" class="box" style="width: 90%">
+      <div id="moist" class="box" style="width: 90%">
       </div>
       <span class="center-text" style="color: #1e90ff;margin-top: 15px;">Humidity</span>
-      <div id="humidity" class="box" style="width: 90%">
+      <div id="humid" class="box" style="width: 90%">
+      </div>
+      <span class="center-text" style="color: #1e90ff;margin-top: 15px;">Ambient</span>
+      <div id="ambient" class="box" style="width: 90%">
       </div>
     </div>
     <div name="about" class="main" v-if="currentNav == 'about'">
@@ -55,7 +58,6 @@
 
 <script>
 import Datepicker from 'vuejs-datepicker';
-import tdata from '../../public/log000.txt';
 import * as d3 from "d3v4";
 export default {
   name: 'Home',
@@ -64,7 +66,6 @@ export default {
   },
   data: function(){
     return {
-      tdata,
       isActive: true,
       currentNav: "home",
       sprinklers: {
@@ -80,7 +81,7 @@ export default {
     var mqtt = require('mqtt')
     console.log(mqtt);
     //this.client = mqtt.connect({port: 1883, host: '192.168.0.100', username: 'zombo', password:'pi', keepalive:10000});
-    //this.client = mqtt.connect('mqtt://test.mosquito.org');    
+    //this.client = mqtt.connect('mqtt://test.mosquito.org');
 //console.log(this.client);
 
     this.currentNav = "home";
@@ -108,10 +109,14 @@ export default {
     changeTab(tab){
       this.currentNav = tab;
       if(tab == 'graphs'){
-        this.renderGraph('temperature');
-        this.renderGraph('moisture');
-        this.renderGraph('humidity');
+        this.reRender();
       }
+    },
+    reRender(){
+      this.renderGraph('temp');
+      this.renderGraph('moist');
+      this.renderGraph('humid');
+      this.renderGraph('ambient');
     },
     enableOne(val){
       this.sprinklers[val] = true;
@@ -138,7 +143,8 @@ export default {
           height = 450 - margin.top - margin.bottom;
 
       // parse the date / time
-      var parseTime = d3.timeParse("%d-%b-%y %H:%M:%S");
+      //3-12-2018 17:50:48
+      var parseTime = d3.timeParse("%d-%m-%y %H:%M:%S");
 
       // set the ranges
       var x = d3.scaleTime().range([0, width]);
@@ -158,52 +164,50 @@ export default {
         .append("g")
           .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
-	console.log("req");
-	var d3data;
-	d3.text("/log001.txt", function(error, d3data){
-	d3data = '[' + d3data;
-	d3data = d3data.substring(0, d3data.length-1);
-	d3data = d3data + "]";
-	console.log(d3data);
-      // Get the data
-	      d3.json(d3data, function(error, data) {
-	        console.log("DATA")
-	        console.log(data)
-	        if (error) throw error;
-	
-	        // format the data
-	        data.forEach(function(d) {
-	            d.date = parseTime(d.date);
-	            d.close = +d.close;
-	        });
-	        // Scale the range of the data
-	        x.domain(d3.extent(data, function(d) { return d.date; }));
-	        y.domain([0, d3.max(data, function(d) { return d.close; })]);
-	
-	        // Add the valueline path.
-	        svg.append("path")
-	            .data([data])
-	            .attr("class", "line")
-	            .style("fill", "none")
-	            .style("stroke", "steelblue")
-	            .style("stoke-width", "2px")
-	            .attr("d", valueline);
-	
-	        // Add the X Axis
-	        svg.append("g")
-	            .attr("transform", "translate(0," + height + ")")
-	            .call(d3.axisBottom(x));
-	
-	        // Add the Y Axis
-	        svg.append("g")
-	            .call(d3.axisLeft(y));
-	
+    	console.log("req");
+    	var d3data;
+    	d3.text("/" + arg + "/log000.txt", function(error, d3data){
+    	d3data = '[' + d3data;
+    	d3data = d3data.substring(0, d3data.length-1);
+      d3data = d3data.substring(0, d3data.length-1);
+    	d3data = d3data + "]";
+      d3data = JSON.parse(d3data);
+      var data = d3data;
+      if (error) throw error;
+      for(var i in data){
+        data[i].date = data[i].time[2] + "-" + data[i].time[1] + "-" + data[i].time[0].toString().substring(2,data[i].time[0].length) + " " + data[i].time[3] + ":" + data[i].time[4] + ":" + data[i].time[5];
+      }
+      // format the data
+      data.forEach(function(d) {
+          d.date = parseTime(d.date);
+          d.close = +d.message;
       });
+      // Scale the range of the data
+      x.domain(d3.extent(data, function(d) { return d.date; }));
+      y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+      // Add the valueline path.
+      svg.append("path")
+          .data([data])
+          .attr("class", "line")
+          .style("fill", "none")
+          .style("stroke", "steelblue")
+          .style("stoke-width", "2px")
+          .attr("d", valueline);
+
+      // Add the X Axis
+      svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
+
+      // Add the Y Axis
+      svg.append("g")
+          .call(d3.axisLeft(y));
 
 
 
 	})
-	
+
 
     }
   }
